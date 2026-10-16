@@ -1,0 +1,10 @@
+# 依赖（本项目刻意零依赖，这里只是兜底）
+node_modules/
+
+# 日志与本地抓包
+*.log
+tools/last-reply.json
+
+# 系统垃圾
+Thumbs.db
+.DS_Store

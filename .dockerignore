@@ -1,0 +1,13 @@
+.git
+.github
+.gitignore
+.gitattributes
+node_modules
+docs
+tools
+selftest.ts
+tsconfig.json
+README.md
+start.cmd
+docker-compose.yml
+*.log

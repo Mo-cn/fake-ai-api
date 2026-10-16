@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>__BRAND__</title>
+<meta name="description" content="__SLOGAN__">
+<link rel="icon" href="/favicon.ico">
+<style>
+  :root { --ink: #111111; --line: #111111; --muted: #6b6b6b; --faint: #dcdcdc; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    color: var(--ink);
+    padding: 24px;
+    font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, "Cascadia Mono", monospace;
+    -webkit-font-smoothing: antialiased;
+  }
+  .box {
+    width: 100%;
+    max-width: 520px;
+    border: 1px solid var(--line);
+    padding: 30px 32px 24px;
+  }
+  h1 {
+    margin: 0 0 6px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  .slogan { color: var(--muted); font-size: 12px; margin-bottom: 26px; }
+  .field { margin-bottom: 20px; }
+  .label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 7px;
+  }
+  .value { display: flex; align-items: center; gap: 12px; }
+  .value code {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 5px;
+    font-size: 13px;
+  }
+  button {
+    flex: none;
+    font: inherit;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    background: #ffffff;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    padding: 6px 12px;
+    transition: background .12s, color .12s;
+  }
+  button:hover { background: var(--ink); color: #ffffff; }
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+    padding-top: 14px;
+    border-top: 1px solid var(--faint);
+    color: var(--muted);
+    font-size: 10.5px;
+    letter-spacing: .5px;
+  }
+</style>
+</head>
+<body>
+<main class="box">
+  <h1>__BRAND__</h1>
+  <div class="slogan">__SLOGAN__</div>
+
+  <div class="field">
+    <div class="label">API Key</div>
+    <div class="value">
+      <code id="apiKey">签发中…</code>
+      <button id="btnCopyKey">复制</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <div class="label">Base URL</div>
+    <div class="value">
+      <code id="baseUrl">__BASE_URL__</code>
+      <button id="btnCopyBase">复制</button>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span><span id="modelCount">__MODEL_COUNT__</span> 个模型 · 设备 <span id="deviceId">—</span></span>
+    <span>__VERSION__</span>
+  </div>
+</main>
+<script>
+(function () {
+  var keyEl = document.getElementById('apiKey');
+  var devEl = document.getElementById('deviceId');
+  var baseEl = document.getElementById('baseUrl');
+  var base = baseEl.textContent.trim();
+
+  function canvasHash() {
+    try {
+      var c = document.createElement('canvas');
+      c.width = 240; c.height = 60;
+      var g = c.getContext('2d');
+      g.textBaseline = 'top';
+      g.font = '16px Arial';
+      g.fillStyle = '#f60'; g.fillRect(0, 0, 120, 24);
+      g.fillStyle = '#069'; g.fillText('FreeEgg-Fingerprint', 2, 16);
+      g.fillStyle = 'rgba(102,204,0,0.7)'; g.fillText('FreeEgg-Fingerprint', 4, 20);
+      return c.toDataURL().slice(-96);
+    } catch (e) { return 'nc'; }
+  }
+
+  function webglHash() {
+    try {
+      var c = document.createElement('canvas');
+      var gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+      if (!gl) return 'ng';
+      var dbg = gl.getExtension('WEBGL_debug_renderer_info');
+      var v = dbg ? gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL) : gl.getParameter(gl.VENDOR);
+      var r = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+      return String(v) + '/' + String(r);
+    } catch (e) { return 'ng'; }
+  }
+
+  function deviceCode() {
+    return [
+      navigator.userAgent || '',
+      navigator.language || '',
+      (navigator.languages || []).join(','),
+      navigator.platform || '',
+      String(screen.width) + 'x' + String(screen.height) + 'x' + String(screen.colorDepth),
+      String(new Date().getTimezoneOffset()),
+      String(navigator.hardwareConcurrency || 0),
+      String(navigator.deviceMemory || 0),
+      String(navigator.maxTouchPoints || 0),
+      canvasHash(),
+      webglHash()
+    ].join('|');
+  }
+
+  function copy(text, btn) {
+    var done = function () {
+      var old = btn.textContent;
+      btn.textContent = '已复制';
+      setTimeout(function () { btn.textContent = old; }, 1200);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, done);
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      done();
+    }
+  }
+
+  document.getElementById('btnCopyKey').addEventListener('click', function (ev) { copy(keyEl.textContent, ev.target); });
+  document.getElementById('btnCopyBase').addEventListener('click', function (ev) { copy(base, ev.target); });
+
+  fetch('/v1/device/register', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ deviceCode: deviceCode(), userAgent: navigator.userAgent })
+  })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      keyEl.textContent = d.key || '—';
+      devEl.textContent = d.device_id || '—';
+    })
+    .catch(function () { keyEl.textContent = '签发失败，请刷新'; });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "nailong-free-egg-llm",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "企业级大模型统一网关（零依赖 · 原生 TypeScript）",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "node src/index.ts",
+    "dev": "node --watch src/index.ts",
+    "test": "node selftest.ts",
+    "bake": "node tools/bake.ts",
+    "diag": "node tools/diag.ts",
+    "timing": "node tools/timing.ts",
+    "streamcheck": "node tools/streamcheck.ts"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

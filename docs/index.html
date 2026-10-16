@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FreeEgg AI Gateway · fake-ai-api</title>
+<meta name="description" content="零依赖的原生 TypeScript 大模型兼容网关：OpenAI / Anthropic / Gemini / Ollama 四套协议，一个 Base URL。">
+<link rel="icon" href="portal.png">
+<style>
+  :root { --ink:#111; --muted:#6b6b6b; --faint:#e2e2e2; --bg:#fff; }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font:14px/1.75 ui-monospace,SFMono-Regular,Menlo,Consolas,"Cascadia Mono",monospace;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:860px; margin:0 auto; padding:64px 24px 80px; }
+  header { border-bottom:1px solid var(--ink); padding-bottom:22px; margin-bottom:34px; }
+  h1 { margin:0 0 8px; font-size:20px; letter-spacing:4px; text-transform:uppercase; font-weight:700; }
+  .tag { color:var(--muted); font-size:12.5px; }
+  h2 { font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin:38px 0 14px; }
+  p { margin:0 0 12px; }
+  a { color:var(--ink); text-decoration:none; border-bottom:1px solid var(--ink); }
+  a:hover { background:var(--ink); color:#fff; }
+  pre {
+    background:#fafafa; border:1px solid var(--faint); padding:14px 16px; overflow:auto;
+    font-size:12.5px; line-height:1.65; margin:0 0 14px; white-space:pre;
+  }
+  table { border-collapse:collapse; width:100%; font-size:12.5px; margin-bottom:14px; }
+  th,td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--faint); vertical-align:top; }
+  th { color:var(--muted); font-weight:400; letter-spacing:1px; text-transform:uppercase; font-size:10.5px; }
+  .note { border-left:2px solid var(--ink); padding:2px 0 2px 14px; color:var(--muted); margin:0 0 14px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  img { width:100%; border:1px solid var(--faint); display:block; }
+  footer { margin-top:56px; padding-top:18px; border-top:1px solid var(--faint); color:var(--muted); font-size:11.5px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  @media (max-width:640px) { .grid { grid-template-columns:1fr; } .wrap { padding:40px 18px 60px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>FreeEgg AI</h1>
+    <div class="tag">一个 Base URL，接入主流大模型 · 零依赖 · 原生 TypeScript</div>
+  </header>
+
+  <p>
+    一个兼容 <strong>OpenAI / Anthropic / Gemini / Ollama</strong> 四套协议的网关，
+    用 Node 内置模块写成，<strong>没有一行第三方依赖，也不需要构建</strong>。
+    直接跑 <code>.ts</code>，因为 Node 22.18+ 自带类型擦除。
+  </p>
+
+  <h2>跑起来</h2>
+  <pre>docker run -d --name freeegg -p 8841:8841 \
+  ghcr.io/mo-cn/fake-ai-api:latest</pre>
+  <p>然后打开 <strong>http://127.0.0.1:8841/</strong> —— 页面会按你的设备指纹签发一把 <code>sk-fe-...</code> 密钥，
+  把它和 Base URL <code>http://127.0.0.1:8841/v1</code> 填进任意 agent 客户端即可。</p>
+  <p class="note">
+    也可以用 docker compose：<code>docker compose up -d</code>。
+    想直接跑源码，本机装 Node 22.18+ 后执行 <code>node src/index.ts</code>。
+  </p>
+
+  <h2>支持的协议</h2>
+  <table>
+    <tr><th>协议</th><th>端点</th></tr>
+    <tr><td>OpenAI Chat</td><td>POST /v1/chat/completions（含 SSE 流式）· GET /v1/models · GET /v1/models/{id}</td></tr>
+    <tr><td>OpenAI 旧版</td><td>POST /v1/completions · POST /v1/embeddings</td></tr>
+    <tr><td>OpenAI Responses</td><td>POST /v1/responses（Codex CLI 事件流）</td></tr>
+    <tr><td>Anthropic</td><td>POST /v1/messages（thinking / tool_use 内容块）· POST /v1/messages/count_tokens</td></tr>
+    <tr><td>Google Gemini</td><td>GET /v1beta/models · POST /v1beta/models/{model}:generateContent · :streamGenerateContent</td></tr>
+    <tr><td>Ollama</td><td>GET /api/tags · /api/version · POST /api/chat · /api/generate · /api/show</td></tr>
+    <tr><td>门户与运维</td><td>GET / · POST /v1/device/register · GET /health · GET /__prank/stats</td></tr>
+  </table>
+
+  <h2>模型目录</h2>
+  <p>
+    auto · claude-opus-5.5 · claude-sonnet-5.5 · claude-haiku-5.5 · gpt-6-astra · gpt-6-sol · gpt-6-mini ·
+    gemini-4.0-pro · gemini-4.0-flash · grok-5 · deepseek-v4 · qwen4-max · kimi-k3 · glm-5 ·
+    doubao-2.0-pro · llama-5-scout
+  </p>
+  <p class="note">目录之外的模型名同样接受，请求里写什么就回什么。</p>
+
+  <h2>常用环境变量</h2>
+  <table>
+    <tr><th>变量</th><th>默认</th><th>说明</th></tr>
+    <tr><td>PORT</td><td>8841</td><td>监听端口</td></tr>
+    <tr><td>HOST</td><td>127.0.0.1</td><td>容器内固定为 0.0.0.0</td></tr>
+    <tr><td>PRANK_THINK_MS</td><td>13000</td><td>每轮请求先等待多久再出正文</td></tr>
+    <tr><td>PRANK_TOOLCALL</td><td>auto</td><td>auto / real / fictional / off / 指定工具名</td></tr>
+    <tr><td>PRANK_ASCII_WIDTH</td><td>68</td><td>字符画宽度（列）</td></tr>
+    <tr><td>PRANK_ASCII_MODE</td><td>mono</td><td>mono 单色 / color 真彩</td></tr>
+    <tr><td>PRANK_REQUIRE_KEY</td><td>0</td><td>1 = 严格校验设备密钥</td></tr>
+    <tr><td>PRANK_KEY_SALT</td><td>free-egg-public-salt-v1</td><td>密钥派生盐值</td></tr>
+  </table>
+
+  <h2>界面</h2>
+  <div class="grid">
+    <figure style="margin:0">
+      <img src="portal.png" alt="设备密钥门户">
+      <figcaption class="tag" style="margin-top:8px">设备密钥门户（GET /）</figcaption>
+    </figure>
+    <figure style="margin:0">
+      <img src="markdown-fix.png" alt="Markdown 渲染对比">
+      <figcaption class="tag" style="margin-top:8px">输出对 Markdown 客户端的兼容性对比</figcaption>
+    </figure>
+  </div>
+
+  <h2>为什么 API 不部署在这里</h2>
+  <p>
+    GitHub Pages 只能托管静态文件，没有 Node 运行时，也接不了动态请求。
+    所以这一页只是项目介绍，真正的服务请用上面的 Docker 命令在本地或你自己的服务器上跑起来。
+    镜像由 GitHub Actions 自动构建并推送到 GHCR。
+  </p>
+
+  <footer>
+    <span>Apache-2.0 · <a href="https://github.com/Mo-cn/fake-ai-api">Mo-cn/fake-ai-api</a></span>
+    <span><a href="https://github.com/Mo-cn/fake-ai-api/pkgs/container/fake-ai-api">GHCR 镜像</a> · <a href="https://github.com/Mo-cn/fake-ai-api#readme">README</a></span>
+  </footer>
+
+</div>
+</body>
+</html>

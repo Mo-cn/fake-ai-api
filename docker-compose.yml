@@ -1,0 +1,15 @@
+services:
+  freeegg:
+    image: ghcr.io/mo-cn/fake-ai-api:latest
+    container_name: freeegg
+    ports:
+      - "8841:8841"
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8841"
+      PRANK_THINK_MS: "13000"
+      PRANK_ASCII_WIDTH: "68"
+      PRANK_ASCII_MODE: mono
+      PRANK_TOOLCALL: auto
+      PRANK_REQUIRE_KEY: "0"
+    restart: unless-stopped
