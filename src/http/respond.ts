@@ -14,13 +14,13 @@ export function corsHeaders(extra?: Record<string, string>): Record<string, stri
   return Object.assign({}, CORS, extra || {});
 }
 
-export function json(res: ServerResponse, code: number, obj: unknown): void {
+export function json(res: ServerResponse, code: number, obj: unknown, extraHeaders?: Record<string, string>): void {
   const buf = Buffer.from(JSON.stringify(obj), 'utf8');
-  res.writeHead(code, corsHeaders({
+  res.writeHead(code, corsHeaders(Object.assign({
     'content-type': 'application/json; charset=utf-8',
     'content-length': String(buf.length),
     'x-powered-by': 'FreeEgg-Gateway',
-  }));
+  }, extraHeaders || {})));
   res.end(buf);
 }
 
@@ -60,8 +60,15 @@ export function ndjsonHead(res: ServerResponse): void {
 }
 
 /** 标准错误体：仿 OpenAI 的 error 结构。 */
-export function apiError(res: ServerResponse, code: number, message: string, type: string, extra?: Record<string, unknown>): void {
+export function apiError(
+  res: ServerResponse,
+  code: number,
+  message: string,
+  type: string,
+  extra?: Record<string, unknown>,
+  headers?: Record<string, string>,
+): void {
   json(res, code, Object.assign({
     error: Object.assign({ message, type, param: null, code: type }, extra || {}),
-  }, {}));
+  }, {}), headers);
 }

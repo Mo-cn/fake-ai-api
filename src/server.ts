@@ -23,10 +23,37 @@ export interface App {
   stats: Stats;
 }
 
+/**
+ * 还原对外的真实地址。
+ * 线上一般有反向代理（EdgeOne / nginx / 宝塔），必须读 X-Forwarded-Proto / -Host，
+ * 否则错误提示里会写错协议（明明是 https 却说 http，用户照着配就会踩 301 降级 POST 的坑）。
+ */
 function baseUrlOf(req: IncomingMessage, cfg: AppConfig): string {
-  const host = String(req.headers.host || (cfg.host + ':' + cfg.port));
-  return 'http://' + host;
+  const fwdHost = String(req.headers['x-forwarded-host'] || '').split(',')[0].trim();
+  const host = fwdHost || String(req.headers.host || (cfg.host + ':' + cfg.port));
+  const fwdProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase();
+  const encrypted = (req.socket as { encrypted?: boolean } | undefined)?.encrypted === true;
+  const proto = fwdProto === 'https' || fwdProto === 'http' ? fwdProto : (encrypted ? 'https' : 'http');
+  return proto + '://' + host;
 }
+
+/** 只接受 POST 的路径：被别的动词打到时给出明确提示，而不是含糊的 404。 */
+const POST_ONLY = new Set<string>([
+  '/v1/chat/completions',
+  '/v1/completions',
+  '/v1/embeddings',
+  '/v1/responses',
+  '/responses',
+  '/v1/messages',
+  '/v1/messages/count_tokens',
+  '/v1/device/register',
+  '/v1/keys',
+  '/api/chat',
+  '/api/generate',
+  '/api/show',
+]);
+
+const GEMINI_PATH = /^\/v1beta\/models\/.+:(streamGenerateContent|generateContent)$/;
 
 /** 按请求头覆盖单次请求的配置（自测/调试用）。 */
 function contextFor(req: IncomingMessage, cfg: AppConfig): RequestContext {
@@ -80,7 +107,9 @@ export function createApp(cfg: AppConfig): App {
 
   const server = http.createServer(async (req: IncomingMessage, res: ServerResponse) => {
     const url = new URL(req.url || '/', baseUrlOf(req, cfg));
-    const pathname = decodeURIComponent(url.pathname);
+    // 容忍尾斜杠：/v1/chat/completions/ 与 /v1/chat/completions 等价
+    let pathname = decodeURIComponent(url.pathname);
+    if (pathname.length > 1) pathname = pathname.replace(/\/+$/, '') || '/';
     const ctx = contextFor(req, cfg);
     const method = req.method || 'GET';
 
@@ -294,6 +323,17 @@ export function createApp(cfg: AppConfig): App {
       // ---------- 兜底 ----------
       bump(stats, 'other');
       logLine(cfg, 'other', method + ' ' + pathname);
+      if (POST_ONLY.has(pathname) || GEMINI_PATH.test(pathname)) {
+        const realHost = String(req.headers['x-forwarded-host'] || req.headers.host || '');
+        const isLocal = /^(127\.0\.0\.1|localhost|\[::1\]|0\.0\.0\.0)(:\d+)?$/.test(realHost);
+        // 线上最常见的踩坑：客户端把 Base URL 配成 http://，服务端 301 跳 https://，
+        // 而按 HTTP 规范 POST 在 301/302 后会被客户端降级成 GET —— 于是打到这里。
+        const hint = isLocal
+          ? ''
+          : ' 提示：若客户端填的是 http:// 地址，服务端 301 跳转到 https:// 时多数 HTTP 客户端会按规范把 POST 降级成 GET。请把 Base URL 直接写成 https:// 开头。';
+        apiError(res, 405, pathname + ' 需要 POST 请求，收到的是 ' + method + '。' + hint, 'method_not_allowed', undefined, { allow: 'POST' });
+        return;
+      }
       apiError(res, 404, '未知端点 ' + pathname + '。请参考 ' + baseUrlOf(req, cfg) + '/ 的接口文档。', 'not_found');
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
