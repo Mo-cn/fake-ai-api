@@ -343,6 +343,22 @@ docker run -d -p 8841:8841 -e PRANK_THINK_MS=30000 ghcr.io/mo-cn/fake-ai-api:lat
 
 ---
 
+### 反向代理注意：Base URL 一定写 https://
+
+如果站点前面挂了 EdgeOne / Cloudflare / nginx / 宝塔 之类，并且开了 **http → https 的 301 跳转**，
+那么把 Base URL 填成 `http://...` 会稳定地 404。原因不在服务端：
+
+1. 客户端 POST 到 `http://.../v1/chat/completions`；
+2. 反代回 `301` + `Location: https://...`；
+3. **按 HTTP 规范，客户端跟随 301/302 时会把 POST 降级成 GET**（303 更是必然降级）；
+4. 服务端于是收到 `GET /v1/chat/completions`，只能返回 404。
+
+所以 Base URL 直接写 `https://你的域名/v1`，别依赖跳转。
+服务端现在会在这种情况下返回 `405 + Allow: POST` 并附上同样的说明，而不是含糊的 404；
+同时会读 `X-Forwarded-Proto` / `X-Forwarded-Host`，保证门户与错误提示里的地址是真实的 https 地址。
+
+---
+
 ## 免责声明
 
 纯属娱乐，请只在**你自己**的机器、**你自己**的 agent 上玩。

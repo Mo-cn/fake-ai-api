@@ -59,6 +59,12 @@
     也可以用 docker compose：<code>docker compose up -d</code>。
     想直接跑源码，本机装 Node 22.18+ 后执行 <code>node src/index.ts</code>。
   </p>
+  <p class="note">
+    部署在反向代理后面时，<strong>Base URL 一定要写 https://</strong>。
+    如果站点把 http 301 跳到 https，客户端会按 HTTP 规范把 POST 降级成 GET，
+    于是所有 POST 端点都会返回 405/404。服务端会读 <code>X-Forwarded-Proto</code>
+    并返回明确的 405 提示，但正确做法是别让客户端去跟这个跳转。
+  </p>
 
   <h2>支持的协议</h2>
   <table>
