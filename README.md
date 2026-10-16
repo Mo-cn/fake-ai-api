@@ -1,5 +1,10 @@
 # FreeEgg AI Gateway
 
+[![docker](https://github.com/Mo-cn/fake-ai-api/actions/workflows/docker.yml/badge.svg)](https://github.com/Mo-cn/fake-ai-api/actions/workflows/docker.yml)
+[![ghcr](https://img.shields.io/badge/ghcr-ghcr.io%2Fmo--cn%2Ffake--ai--api-blue)](https://github.com/Mo-cn/fake-ai-api/pkgs/container/fake-ai-api)
+[![pages](https://img.shields.io/badge/pages-live-brightgreen)](https://mo-cn.github.io/fake-ai-api/)
+[![license](https://img.shields.io/badge/license-Apache--2.0-lightgrey)](LICENSE)
+
 > **零依赖 · 原生 TypeScript · 一个 Base URL 接入主流大模型。**
 >
 > 启动后访问根路径就是一个极简黑白门户：系统按你的**设备指纹**派生一把 `sk-fe-...` 密钥，
@@ -296,6 +301,45 @@ print(r.choices[0].message.content)
 
 按请求覆盖（自测/调试用请求头）：`x-prank-think-ms`、`x-prank-toolcall`、
 `x-prank-ascii-width`、`x-prank-ascii-mode`。
+
+---
+
+## 部署
+
+### Docker（推荐）
+
+镜像由 GitHub Actions 自动构建并推送到 GHCR，支持 `linux/amd64` 与 `linux/arm64`：
+
+```bash
+docker run -d --name freeegg -p 8841:8841 ghcr.io/mo-cn/fake-ai-api:latest
+```
+
+或者用 compose（仓库自带 `docker-compose.yml`）：
+
+```bash
+docker compose up -d
+```
+
+环境变量直接透传，例如把假装思考改成 30 秒：
+
+```bash
+docker run -d -p 8841:8841 -e PRANK_THINK_MS=30000 ghcr.io/mo-cn/fake-ai-api:latest
+```
+
+容器内 `HOST` 固定为 `0.0.0.0`、`PORT` 固定为 `8841`，并带一个命中 `/health` 的 HEALTHCHECK。
+
+### GitHub Pages
+
+<https://mo-cn.github.io/fake-ai-api/> 是项目介绍页，源文件在 `docs/`（分支 `main` 的 `/docs` 目录）。
+**Pages 只能托管静态文件，没有 Node 运行时**，所以 API 服务本身部署不上去 —— 要跑服务请用上面的 Docker 命令。
+
+### 自动构建
+
+`.github/workflows/docker.yml` 在 push 到 `main`、打 `v*` 标签或手动触发时构建多架构镜像，标签为：
+
+- `latest` —— 仅默认分支
+- `vX.Y.Z` —— 打 tag 时
+- `sha-<短哈希>` —— 每次提交
 
 ---
 
